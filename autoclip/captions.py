@@ -47,7 +47,7 @@ def _get_model():
 
             _model = WhisperModel(
                 config.WHISPER_MODEL, device="cpu", compute_type="int8",
-                download_root=config.WHISPER_CACHE, cpu_threads=0,
+                download_root=config.WHISPER_CACHE, cpu_threads=config.WHISPER_THREADS, num_workers=1,
             )
         return _model
 
@@ -80,6 +80,25 @@ def slice_words(words: list[Word], start: float, length: float) -> list[Word]:
     end = start + length
     return [Word(w.text, max(0.0, w.start - start), min(length, w.end - start))
             for w in words if w.end > start and w.start < end]
+
+
+def transcribe_long(src: Path, work_dir: Path, duration: float, language: str | None = None,
+                    transcribe_fn=None, progress=None) -> list[Word]:
+    """Transcribe a long video in fixed-size chunks so memory stays flat regardless of length."""
+    transcribe_fn = transcribe_fn or transcribe
+    words: list[Word] = []
+    t = 0.0
+    while t < duration:
+        length = min(float(config.WHISPER_CHUNK_SECONDS), duration - t)
+        wav = extract_audio(src, work_dir / "chunk.wav", t, length)
+        try:
+            words += [Word(w.text, w.start + t, w.end + t) for w in transcribe_fn(wav, language)]
+        finally:
+            wav.unlink(missing_ok=True)
+        t += length
+        if progress:
+            progress(min(1.0, t / duration))
+    return words
 
 
 # ------------------------------------------------------------------- ASS output
