@@ -1,0 +1,1 @@
+"""AutoClip AI core package."""

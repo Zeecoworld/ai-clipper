@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: autoclip-ai
+    runtime: docker
+    plan: standard            # 2 GB RAM. "starter" (512 MB) only works with WHISPER_MODEL=tiny and short videos.
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: MAX_UPLOAD_MB
+        value: "500"
+      - key: MAX_CONCURRENT_JOBS
+        value: "1"
+      - key: JOB_TTL_MINUTES
+        value: "60"
+      - key: X264_PRESET
+        value: veryfast
+      - key: CAPTIONS_ENABLED
+        value: "1"

@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AutoClip AI</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✂️</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0f1220; --panel:#171b2e; --panel2:#1e2338; --line:#2b3150; --text:#e9ecf8; --muted:#8e95b6;
+  --rose:#ff4f81; --rose-d:#d93a69; --mint:#6ee7c8; --yellow:#ffd400; --radius:14px;
+  --display:'Bricolage Grotesque','Segoe UI',system-ui,sans-serif; --body:'Instrument Sans','Segoe UI',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0}
+html{color-scheme:dark}
+body{background:radial-gradient(1200px 600px at 12% -10%,#1b1f3d 0,transparent 60%),var(--bg);color:var(--text);font:15px/1.5 var(--body);min-height:100vh}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--mint);outline-offset:2px}
+header{display:flex;align-items:center;gap:12px;padding:20px clamp(16px,4vw,40px)}
+.logo{width:34px;height:34px;border-radius:10px;background:var(--rose);display:grid;place-items:center;font-size:18px}
+header b{font:800 20px var(--display);letter-spacing:-.01em}
+header span{color:var(--muted);margin-left:auto;font-size:13px}
+main{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:24px;padding:0 clamp(16px,4vw,40px) 60px;align-items:start}
+@media(max-width:980px){main{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius)}
+/* drop zone / source */
+#drop{display:grid;place-items:center;text-align:center;padding:56px 24px;min-height:340px;border:2px dashed var(--line);background:
+  repeating-linear-gradient(90deg,transparent 0 38px,#ffffff06 38px 40px),var(--panel);cursor:pointer;transition:border-color .15s,background-color .15s}
+#drop.over{border-color:var(--rose);background-color:#ff4f8112}
+#drop h1{font:800 clamp(28px,4vw,44px)/1.05 var(--display);letter-spacing:-.025em;max-width:16ch;margin:0 auto 14px}
+#drop p{color:var(--muted);max-width:44ch;margin:0 auto 22px}
+.btn{border:0;border-radius:10px;padding:11px 18px;font-weight:600;cursor:pointer;background:var(--panel2);border:1px solid var(--line);transition:transform .08s,background .15s}
+.btn:hover{background:#262c48}.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--rose);border-color:var(--rose);color:#fff}.btn.primary:hover{background:var(--rose-d)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+#source{display:none;padding:14px}
+#source video{width:100%;max-height:420px;border-radius:10px;background:#000;display:block}
+.srcbar{display:flex;gap:12px;align-items:center;padding:12px 4px 2px}
+.srcbar .name{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.srcbar .meta{color:var(--muted);font-size:13px;white-space:nowrap}
+.srcbar .btn{margin-left:auto;padding:7px 12px;font-size:13px}
+/* timeline */
+#tlwrap{display:none;margin-top:16px;padding:16px}
+#tlwrap h2,.results h2{font:700 17px var(--display);margin-bottom:2px}
+#tlwrap p{color:var(--muted);font-size:13px;margin-bottom:10px}
+#tl{width:100%;height:110px;display:block;border-radius:8px;background:#12152a;cursor:pointer}
+/* progress */
+#prog{display:none;margin-top:16px;padding:18px}
+.bar{height:10px;border-radius:99px;background:var(--panel2);overflow:hidden;margin:10px 0 8px}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--rose),#ff9a5c);border-radius:99px;transition:width .4s}
+#prog .row{display:flex;justify-content:space-between;gap:10px;color:var(--muted);font-size:13px}
+#prog .row b{color:var(--text);font-weight:600}
+#err{display:none;margin-top:16px;padding:14px 16px;border-color:#7a2c44;background:#2a1624;color:#ffc2d1;white-space:pre-wrap;word-break:break-word;font-size:13px}
+/* results */
+.results{display:none;margin-top:24px}
+.results .head{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.results .head .btn{margin-left:auto}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px}
+.clip{padding:10px;transition:border-color .15s}
+.clip:hover{border-color:var(--rose)}
+.clip video{width:100%;aspect-ratio:9/16;object-fit:cover;border-radius:10px;background:#000;display:block}
+.clip .t{display:flex;justify-content:space-between;margin:10px 2px 6px;font-weight:600}
+.clip .t small{color:var(--muted);font-weight:400}
+.score{height:5px;border-radius:9px;background:var(--panel2);overflow:hidden;margin:0 2px 8px}
+.score i{display:block;height:100%;background:var(--mint)}
+.clip .note{font-size:12px;color:var(--muted);margin:0 2px 8px;min-height:18px}
+.clip a.btn{display:block;text-align:center;text-decoration:none;font-size:14px}
+/* sidebar */
+aside{position:sticky;top:16px;display:flex;flex-direction:column;gap:14px;max-height:calc(100vh - 32px)}
+@media(max-width:980px){aside{position:static;max-height:none}}
+.side{overflow:auto;padding:6px 18px 18px}
+.side h3{font:700 15px var(--display);margin:18px 0 10px;padding-top:14px;border-top:1px solid var(--line)}
+.side h3:first-child{border:0;padding-top:8px;margin-top:8px}
+.field{margin-bottom:12px}
+.field label,.lbl{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-bottom:5px}
+.field label output{color:var(--text);font-weight:600}
+input[type=range]{width:100%;accent-color:var(--rose)}
+input[type=text],select{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:9px 11px}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:3px;gap:3px}
+.seg label{margin:0;display:block;text-align:center;padding:6px;border-radius:7px;cursor:pointer;color:var(--muted);font-size:13px}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg input:checked+span{color:#fff}
+.seg label:has(input:checked){background:var(--rose);color:#fff}
+.seg label:has(input:focus-visible){outline:2px solid var(--mint)}
+.chk{display:flex;align-items:center;gap:9px;margin-bottom:9px;cursor:pointer;font-size:14px}
+.chk input{accent-color:var(--rose);width:17px;height:17px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+input[type=color]{width:100%;height:36px;border:1px solid var(--line);border-radius:9px;background:var(--panel2);padding:3px;cursor:pointer}
+/* phone preview */
+.preview{display:flex;gap:16px;align-items:center;padding:16px}
+.phone{position:relative;flex:none;width:140px;aspect-ratio:9/16;border-radius:18px;border:3px solid #3a4165;overflow:hidden;
+  background:linear-gradient(160deg,#394b8f,#7a3b7d 55%,#e0627a);container-type:size}
+.phone::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 30% 70%,#ffffff22,transparent 50%)}
+.phone .hook{position:absolute;top:9%;left:8%;right:8%;text-align:center;font:800 7.5cqw/1.2 var(--body);color:#000;background:#fff;border-radius:2px;padding:1cqw 2cqw;display:none}
+.phone .cap{position:absolute;left:6%;right:6%;text-align:center;font:800 7cqw/1.15 var(--body);color:#fff;-webkit-text-stroke:.4cqw #000;paint-order:stroke fill;text-shadow:0 .5cqw 0 #000}
+.preview p{font-size:13px;color:var(--muted)}
+.preview p b{display:block;color:var(--text);font:700 15px var(--display);margin-bottom:3px}
+#go{width:100%;padding:14px;font-size:16px}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo" aria-hidden="true">✂️</div><b>AutoClip AI</b>
+  <span>Long video in, vertical clips out</span>
+</header>
+
+<main>
+  <section>
+    <div id="drop" class="card" tabindex="0" role="button" aria-label="Choose a video file">
+      <div>
+        <h1>Drop a long video to cut it into clips</h1>
+        <p>AutoClip finds the most active moments, reframes them to 9:16 with a blurred backdrop, and burns in word-by-word captions.</p>
+        <button class="btn primary" type="button" id="pick">Choose a video</button>
+        <p style="margin:16px 0 0;font-size:13px" id="limits"></p>
+      </div>
+      <input id="file" type="file" accept=".mp4,.mov,.mkv,.avi,.webm,video/*" hidden>
+    </div>
+
+    <div id="source" class="card">
+      <video id="srcvid" controls playsinline preload="metadata"></video>
+      <div class="srcbar"><span class="name" id="sname"></span><span class="meta" id="smeta"></span>
+        <button class="btn" type="button" id="swap">Choose another</button></div>
+    </div>
+
+    <div id="tlwrap" class="card">
+      <h2>Activity timeline</h2>
+      <p id="tlhint">Taller peaks mean more motion on screen. Highlighted bands are the clips we picked. Click anywhere to jump there in the source.</p>
+      <canvas id="tl"></canvas>
+    </div>
+
+    <div id="prog" class="card" aria-live="polite">
+      <b id="pmsg">Uploading…</b>
+      <div class="bar"><i id="pbar"></i></div>
+      <div class="row"><span id="psub"></span><b id="ppct">0%</b></div>
+    </div>
+    <div id="err" class="card" role="alert"></div>
+
+    <div class="results" id="results">
+      <div class="head"><h2 id="rtitle"></h2><a class="btn" id="zip" href="#">Download all as ZIP</a></div>
+      <div class="grid" id="grid"></div>
+    </div>
+  </section>
+
+  <aside>
+    <div class="card preview">
+      <div class="phone"><div class="hook" id="phook"></div><div class="cap" id="pcap"></div></div>
+      <p><b>Caption preview</b>This is how text will sit on a 9:16 clip. Changes below update it live.</p>
+    </div>
+    <div class="card side">
+      <h3>Clips</h3>
+      <div class="field"><label for="highlight_mode">Pick moments by</label>
+        <select id="highlight_mode"><option value="motion">Motion only (fastest)</option><option value="balanced">Motion and speech</option><option value="speech">Speech first</option></select>
+        <small id="hmhint" style="display:block;margin-top:6px;color:var(--muted);font-size:12px">Speech modes transcribe the whole video first, which takes longer. They favor questions, numbers, emphasis and hook phrases.</small></div>
+      <div class="field"><label for="clip_count">Number of clips <output></output></label><input id="clip_count" type="range" min="1" max="10" value="3"></div>
+      <div class="field"><label for="clip_length">Clip length <output></output></label><input id="clip_length" type="range" min="5" max="60" value="20"></div>
+      <div class="field"><label for="blur">Background blur <output></output></label><input id="blur" type="range" min="5" max="51" step="2" value="25"></div>
+
+      <h3>Captions</h3>
+      <label class="chk"><input id="captions" type="checkbox" checked> Auto captions from speech</label>
+      <div class="field"><label for="language">Spoken language</label>
+        <select id="language"><option value="">Auto-detect</option><option value="en">English</option><option value="es">Spanish</option><option value="fr">French</option><option value="de">German</option><option value="pt">Portuguese</option><option value="it">Italian</option><option value="hi">Hindi</option><option value="ar">Arabic</option><option value="ja">Japanese</option><option value="ko">Korean</option><option value="zh">Chinese</option></select></div>
+      <div class="field"><span class="lbl">Position</span>
+        <div class="seg" id="position">
+          <label><input type="radio" name="position" value="top"><span>Top</span></label>
+          <label><input type="radio" name="position" value="center"><span>Middle</span></label>
+          <label><input type="radio" name="position" value="bottom" checked><span>Bottom</span></label>
+        </div></div>
+      <div class="field"><label for="words_per_line">Words per line <output></output></label><input id="words_per_line" type="range" min="1" max="6" value="3"></div>
+      <div class="field"><label for="font_size">Font size <output></output></label><input id="font_size" type="range" min="40" max="130" value="78"></div>
+      <label class="chk"><input id="uppercase" type="checkbox" checked> Uppercase</label>
+      <label class="chk"><input id="highlight" type="checkbox" checked> Highlight the spoken word</label>
+      <div class="two">
+        <div class="field"><label for="text_color">Text</label><input id="text_color" type="color" value="#ffffff"></div>
+        <div class="field"><label for="highlight_color">Highlight</label><input id="highlight_color" type="color" value="#ffd400"></div>
+      </div>
+
+      <h3>Hook text</h3>
+      <div class="field"><label for="hook">Shown at the top of each clip</label><input id="hook" type="text" maxlength="80" placeholder="Wait for the ending…"></div>
+      <div class="field"><label for="hook_seconds">Show for <output></output></label><input id="hook_seconds" type="range" min="0" max="20" value="3"></div>
+    </div>
+    <button class="btn primary" id="go" type="button" disabled>Create clips</button>
+  </aside>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const FIELDS = ['highlight_mode','clip_count','clip_length','blur','captions','language','words_per_line','font_size','uppercase','highlight','text_color','highlight_color','hook','hook_seconds'];
+let file = null, srcURL = null, duration = 0, job = null, timeline = [], clips = [], hover = -1, cfg = {max_upload_mb: 500, captions: true};
+
+const fmt = s => `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
+const hms = s => s >= 3600 ? `${Math.floor(s/3600)}:${fmt(s%3600)}` : fmt(s);
+
+/* ---------- settings ---------- */
+function val(id){const e=$(id);return e.type==='checkbox'?e.checked:e.value}
+function pos(){return document.querySelector('input[name=position]:checked').value}
+function readOptions(){const o={position:pos()};FIELDS.forEach(f=>o[f]=val(f));return o}
+function fmtOut(id){
+  const e=$(id), out=e.parentElement.querySelector('output'); if(!out) return;
+  const v=e.value; out.textContent = id==='clip_length'?v+' s' : id==='hook_seconds'?(v==0?'whole clip':v+' s') : id==='font_size'?v+' px' : v;
+}
+function save(){try{localStorage.setItem('autoclip',JSON.stringify(readOptions()))}catch(e){}}
+function load(){
+  try{const o=JSON.parse(localStorage.getItem('autoclip')||'{}');
+    FIELDS.forEach(f=>{if(!(f in o))return;const e=$(f);e.type==='checkbox'?e.checked=!!o[f]:e.value=o[f]});
+    if(o.position){const r=document.querySelector(`input[name=position][value=${o.position}]`);if(r)r.checked=true}
+  }catch(e){}
+}
+function preview(){
+  const cap=$('pcap'), ph=$('phook'), up=val('uppercase'), wpl=+val('words_per_line');
+  const demo=['this','is','how','it','looks','live'].slice(0,wpl);
+  const hi=Math.min(1,demo.length-1);
+  cap.innerHTML=demo.map((w,i)=>{w=up?w.toUpperCase():w;return i===hi&&val('highlight')?`<span style="color:${val('highlight_color')}">${w}</span>`:w}).join(' ');
+  cap.style.color=val('text_color');
+  cap.style.fontSize=(val('font_size')/1080*100)+'cqw';
+  const p=pos(); cap.style.top=cap.style.bottom=''; cap.style.transform='';
+  if(p==='top')cap.style.top='22%'; else if(p==='center'){cap.style.top='50%';cap.style.transform='translateY(-50%)'} else cap.style.bottom='20%';
+  const h=val('hook').trim(); ph.style.display=h?'block':'none'; ph.textContent=h;
+}
+function bindSettings(){
+  FIELDS.forEach(f=>{const e=$(f);const h=()=>{fmtOut(f);preview();save()};e.addEventListener('input',h);fmtOut(f)});
+  document.querySelectorAll('input[name=position]').forEach(r=>r.addEventListener('change',()=>{preview();save()}));
+  $('language').disabled=!$('captions').checked;
+  $('captions').addEventListener('change',()=>$('language').disabled=!$('captions').checked);
+}
+
+/* ---------- file handling ---------- */
+function setFile(f){
+  if(!f)return;
+  const ok=/\.(mp4|mov|mkv|avi|webm)$/i.test(f.name);
+  if(!ok) return showErr('Unsupported file type. Use mp4, mov, mkv, avi or webm.');
+  if(f.size>cfg.max_upload_mb*1048576) return showErr(`That file is ${(f.size/1048576).toFixed(0)} MB. The limit is ${cfg.max_upload_mb} MB.`);
+  resetRun(); file=f;
+  if(srcURL)URL.revokeObjectURL(srcURL);
+  srcURL=URL.createObjectURL(f);
+  const v=$('srcvid'); v.src=srcURL;
+  v.onloadedmetadata=()=>{duration=v.duration||0;$('smeta').textContent=`${hms(duration)}  ${(f.size/1048576).toFixed(1)} MB`;drawTimeline()};
+  $('sname').textContent=f.name; $('smeta').textContent=`${(f.size/1048576).toFixed(1)} MB`;
+  $('drop').style.display='none'; $('source').style.display='block'; $('tlwrap').style.display='block';
+  $('tlhint').textContent='Click Create clips to analyze this video. Peaks will show where the action is.';
+  $('go').disabled=false; drawTimeline();
+}
+function resetRun(){
+  job=null;timeline=[];clips=[];hover=-1;
+  ['prog','err'].forEach(i=>$(i).style.display='none'); $('results').style.display='none'; $('grid').innerHTML='';
+}
+function showErr(msg){const e=$('err');e.textContent=msg;e.style.display='block';$('prog').style.display='none';$('go').disabled=!file;e.scrollIntoView({behavior:'smooth',block:'nearest'})}
+
+/* ---------- timeline canvas ---------- */
+function drawTimeline(){
+  const c=$('tl'); if(!c.clientWidth)return;
+  const dpr=window.devicePixelRatio||1, w=c.clientWidth, h=c.clientHeight;
+  c.width=w*dpr;c.height=h*dpr; const g=c.getContext('2d'); g.scale(dpr,dpr);
+  g.clearRect(0,0,w,h);
+  const dur=duration||timeline.at(-1)?.[0]||1, X=t=>t/dur*w;
+  clips.forEach((r,i)=>{g.fillStyle=i===hover?'rgba(255,79,129,.55)':'rgba(255,79,129,.28)';g.fillRect(X(r.start),0,Math.max(2,X(r.length)),h);
+    g.fillStyle='#ff4f81';g.fillRect(X(r.start),0,2,h);g.fillStyle='#fff';g.font='600 11px Instrument Sans,sans-serif';g.fillText('Clip '+r.index,X(r.start)+6,14)});
+  if(timeline.length){
+    const bw=Math.max(1.5,w/timeline.length-1);
+    timeline.forEach(([t,s])=>{const bh=Math.max(2,s*(h-26));g.fillStyle='#6ee7c8';g.globalAlpha=.85;g.fillRect(X(t),h-bh-14,bw,bh)});g.globalAlpha=1;
+  }else{g.strokeStyle='#2b3150';g.setLineDash([4,5]);g.beginPath();g.moveTo(0,h-22);g.lineTo(w,h-22);g.stroke();g.setLineDash([])}
+  g.fillStyle='#8e95b6';g.font='11px Instrument Sans,sans-serif';
+  const n=Math.max(2,Math.min(8,Math.floor(w/90)));
+  for(let i=0;i<=n;i++){const t=dur*i/n;g.textAlign=i===0?'left':i===n?'right':'center';g.fillText(hms(t),Math.min(w-1,Math.max(1,X(t))),h-2)}
+  g.textAlign='left';
+  const v=$('srcvid'); if(v.currentTime){g.fillStyle='#fff';g.fillRect(X(v.currentTime),0,2,h)}
+}
+$('tl').addEventListener('click',e=>{const r=e.currentTarget.getBoundingClientRect();const v=$('srcvid');v.currentTime=(e.clientX-r.left)/r.width*(duration||1);v.play().catch(()=>{});});
+$('srcvid').addEventListener('timeupdate',drawTimeline);
+$('tl').addEventListener('mousemove',e=>{if(!clips.length)return;const r=e.currentTarget.getBoundingClientRect();const t=(e.clientX-r.left)/r.width*duration;const i=clips.findIndex(c=>t>=c.start&&t<=c.start+c.length);if(i!==hover){hover=i;drawTimeline()}});
+addEventListener('resize',drawTimeline);
+
+/* ---------- run job ---------- */
+function setProg(p,msg,sub){$('pbar').style.width=(p*100).toFixed(1)+'%';$('ppct').textContent=Math.round(p*100)+'%';$('pmsg').textContent=msg;$('psub').textContent=sub||''}
+function start(){
+  if(!file)return;
+  resetRun(); $('go').disabled=true; $('prog').style.display='block'; setProg(0,'Uploading video…','Sending to the server');
+  const fd=new FormData(); fd.append('file',file); fd.append('options',JSON.stringify(readOptions()));
+  const x=new XMLHttpRequest(); x.open('POST','/api/jobs');
+  x.upload.onprogress=e=>{if(e.lengthComputable)setProg(e.loaded/e.total*0.99,'Uploading video…',`${(e.loaded/1048576).toFixed(0)} of ${(e.total/1048576).toFixed(0)} MB`)};
+  x.onerror=()=>showErr('Upload failed. Check your connection and try again.');
+  x.onload=()=>{
+    let d={};try{d=JSON.parse(x.responseText)}catch(e){}
+    if(x.status!==200)return showErr(d.detail||`Upload failed (${x.status}).`);
+    job=d.id; setProg(0,'Queued…',''); poll();
+  };
+  x.send(fd);
+}
+async function poll(){
+  if(!job)return;
+  try{
+    const r=await fetch('/api/jobs/'+job); const d=await r.json();
+    if(!r.ok)return showErr(d.detail||'Lost track of the job.');
+    if(d.status==='error')return showErr('Processing failed: '+d.error);
+    if(d.status==='done')return finish(d);
+    setProg(d.progress,d.message,d.status==='queued'?'Waiting for a free worker':'Rendering on the server');
+  }catch(e){}
+  setTimeout(poll,1000);
+}
+function finish(d){
+  $('prog').style.display='none'; $('go').disabled=false;
+  timeline=d.timeline; clips=d.results; duration=duration||d.duration; drawTimeline();
+  if(!clips.length){showErr('No suitable moments were detected in this video.');return}
+  $('tlhint').textContent='Taller peaks mean more motion on screen. Highlighted bands are the clips we picked. Click anywhere to jump there in the source.';
+  $('rtitle').textContent=`${clips.length} clip${clips.length>1?'s':''} ready`;
+  $('zip').href=`/api/jobs/${job}/zip`; $('zip').style.display=clips.length>1?'':'none';
+  const top=Math.max(...clips.map(c=>c.score))||1;
+  $('grid').innerHTML=clips.map((c,i)=>`
+    <article class="card clip" data-i="${i}">
+      <video src="${c.url}" controls playsinline preload="metadata"></video>
+      <div class="t">Clip ${c.index}<small>${fmt(c.start)} to ${fmt(c.start+c.length)}</small></div>
+      <div class="score" title="Activity score ${c.score}"><i style="width:${Math.round(c.score/top*100)}%"></i></div>
+      <div class="note">${c.caption_note?esc(c.caption_note):c.caption_words?c.caption_words+' words captioned':''}</div>
+      <a class="btn" href="${c.url}?download=1" download>Download clip ${c.index}</a>
+    </article>`).join('');
+  document.querySelectorAll('.clip').forEach(el=>{
+    el.addEventListener('mouseenter',()=>{hover=+el.dataset.i;drawTimeline()});
+    el.addEventListener('mouseleave',()=>{hover=-1;drawTimeline()});
+  });
+  $('results').style.display='block'; $('results').scrollIntoView({behavior:'smooth',block:'start'});
+}
+const esc=s=>s.replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+
+/* ---------- wiring ---------- */
+const drop=$('drop'), input=$('file');
+drop.addEventListener('click',()=>input.click());
+drop.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();input.click()}});
+$('swap').addEventListener('click',()=>input.click());
+input.addEventListener('change',()=>{setFile(input.files[0]);input.value=''});
+['dragenter','dragover'].forEach(t=>addEventListener(t,e=>{e.preventDefault();if(file==null)drop.classList.add('over')}));
+['dragleave','drop'].forEach(t=>addEventListener(t,e=>{e.preventDefault();drop.classList.remove('over')}));
+addEventListener('drop',e=>setFile(e.dataTransfer.files[0]));
+$('go').addEventListener('click',start);
+
+(async()=>{
+  try{cfg=await (await fetch('/api/config')).json()}catch(e){}
+  $('limits').textContent=`mp4, mov, mkv, avi or webm, up to ${cfg.max_upload_mb} MB. Clips are kept for ${cfg.ttl_minutes||60} minutes, so download what you need.`;
+  if(!cfg.captions){$('highlight_mode').value='motion';$('highlight_mode').disabled=true;$('captions').checked=false;$('captions').disabled=true;$('language').disabled=true}
+  load(); bindSettings(); preview();
+})();
+</script>
+</body>
+</html>
