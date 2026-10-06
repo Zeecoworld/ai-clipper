@@ -12,7 +12,9 @@ def make_vertical_clip(src: Path, out: Path, start: float, length: float,
                        has_audio: bool = True) -> None:
     graph = (
         "split=2[bg][fg];"
-        f"[bg]scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},gblur=sigma={blur}[blur];"
+        # blur a quarter-size copy, then scale up: same look, far less CPU and RAM
+        f"[bg]scale={W // 4}:{H // 4}:force_original_aspect_ratio=increase,crop={W // 4}:{H // 4},"
+        f"gblur=sigma={max(1.0, blur / 4):.1f},scale={W}:{H}[blur];"
         f"[fg]scale={W}:{H}:force_original_aspect_ratio=decrease[main];"
         "[blur][main]overlay=(W-w)/2:(H-h)/2,format=yuv420p"
     )
@@ -23,7 +25,7 @@ def make_vertical_clip(src: Path, out: Path, start: float, length: float,
         cwd = ass_file.parent
         graph += f",ass={ass_file.name}"
 
-    cmd = ["ffmpeg", "-y", "-ss", f"{start:.3f}", "-i", str(src), "-t", f"{length:.3f}",
+    cmd = ["ffmpeg", "-y", "-filter_threads", "1", "-ss", f"{start:.3f}", "-i", str(src), "-t", f"{length:.3f}",
            "-vf", graph, "-c:v", "libx264", "-preset", config.X264_PRESET, "-crf", "21",
            "-threads", str(config.FFMPEG_THREADS), "-r", "30"]
     if has_audio:
