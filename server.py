@@ -1,10 +1,10 @@
 """AutoClip AI – FastAPI server. Serves the HTML UI and a small JSON API (no auth)."""
 import json
+import os
 import re
 import shutil
 import threading
 import time
-import uuid
 import zipfile
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -36,6 +36,7 @@ class Job:
     duration: float = 0.0
     timeline: list = field(default_factory=list)
     results: list = field(default_factory=list)
+    updated: float = 0.0
 
 
 JOBS: dict[str, Job] = {}
@@ -84,38 +85,86 @@ def _options(raw: str) -> dict:
         highlight_mode=o.get("highlight_mode") if o.get("highlight_mode") in ("motion", "balanced", "speech") else "motion")
 
 
-def _run(job: Job, src: Path, opts: dict) -> None:
-    if not SEM.acquire(blocking=False):
-        job.message = "Another job is rendering — you're in the queue…"
-        SEM.acquire()
+JOB_ID = re.compile(r"^job_\d+_[0-9a-f]{8}$")
+_FIELDS = ("status", "progress", "message", "error", "duration", "timeline", "results", "updated")
+STALE_SECONDS = 90  # a running job refreshes job.json every 15 s; silence means its process died
+
+
+def _save(job: Job) -> None:
+    """Persist job state next to its files so any worker (or a restarted server) can serve it."""
+    job.updated = time.time()
+    tmp = job.dir / "job.json.tmp"
     try:
-        job.status = "running"
+        tmp.write_text(json.dumps({k: getattr(job, k) for k in _FIELDS}))
+        os.replace(tmp, job.dir / "job.json")
+    except OSError:
+        pass
 
-        def progress(f: float, m: str) -> None:
-            job.progress, job.message = min(max(f, 0.0), 1.0), m
 
-        info, results = process(src, job.dir, opts["clip_count"], opts["clip_length"], opts["blur"],
-                                opts["captions"], opts["language"], opts["style"], progress=progress,
-                                highlight_mode=opts["highlight_mode"])
-        job.duration = info.duration
-        step = max(1, len(info.timeline) // 240)
-        pts = info.timeline[::step]
-        peak = max((s for _, s in pts), default=1.0) or 1.0
-        job.timeline = [[round(t, 2), round(s / peak, 3)] for t, s in pts]
-        job.results = [dict(index=r.index, start=round(r.start, 2), length=round(r.length, 2),
-                            score=round(r.score, 3), caption_words=r.caption_words,
-                            caption_note=r.caption_note, url=f"/api/jobs/{job.id}/clips/{r.index}")
-                       for r in results]
-        job.status, job.progress, job.message = "done", 1.0, "Done"
-    except Exception as exc:  # surface any failure to the UI
-        job.status, job.error = "error", str(exc)[-600:]
+def _heartbeat(job: Job, stop: threading.Event) -> None:
+    while not stop.wait(15):
+        _save(job)
+
+
+def _load(job_id: str) -> "Job | None":
+    if not JOB_ID.match(job_id):
+        return None
+    d = config.WORK_ROOT / job_id
+    try:
+        data = json.loads((d / "job.json").read_text())
+    except (OSError, ValueError):
+        return None
+    job = Job(id=job_id, dir=d)
+    for k in _FIELDS:
+        if k in data:
+            setattr(job, k, data[k])
+    if job.status in ("queued", "running") and time.time() - job.updated > STALE_SECONDS:
+        job.status = "error"
+        job.error = "The server restarted or ran out of memory while processing. Please upload the video again."
+    return job
+
+
+def _run(job: Job, src: Path, opts: dict) -> None:
+    stop = threading.Event()
+    threading.Thread(target=_heartbeat, args=(job, stop), daemon=True).start()
+    try:
+        if not SEM.acquire(blocking=False):
+            job.message = "Another job is rendering — you're in the queue…"
+            _save(job)
+            SEM.acquire()
+        try:
+            job.status = "running"
+            _save(job)
+
+            def progress(f: float, m: str) -> None:
+                job.progress, job.message = min(max(f, 0.0), 1.0), m
+                _save(job)
+
+            info, results = process(src, job.dir, opts["clip_count"], opts["clip_length"], opts["blur"],
+                                    opts["captions"], opts["language"], opts["style"], progress=progress,
+                                    highlight_mode=opts["highlight_mode"])
+            job.duration = info.duration
+            step = max(1, len(info.timeline) // 240)
+            pts = info.timeline[::step]
+            peak = max((s for _, s in pts), default=1.0) or 1.0
+            job.timeline = [[round(t, 2), round(s / peak, 3)] for t, s in pts]
+            job.results = [dict(index=r.index, start=round(r.start, 2), length=round(r.length, 2),
+                                score=round(r.score, 3), caption_words=r.caption_words,
+                                caption_note=r.caption_note, url=f"/api/jobs/{job.id}/clips/{r.index}")
+                           for r in results]
+            job.status, job.progress, job.message = "done", 1.0, "Done"
+        except Exception as exc:  # surface any failure to the UI
+            job.status, job.error = "error", str(exc)[-600:]
+        finally:
+            SEM.release()
     finally:
-        SEM.release()
+        stop.set()
+        _save(job)
         src.unlink(missing_ok=True)
 
 
 def _job(job_id: str) -> Job:
-    job = JOBS.get(job_id)
+    job = JOBS.get(job_id) or _load(job_id)
     if job is None or not job.dir.exists():
         raise HTTPException(404, "Job not found or expired. Upload the video again.")
     return job
@@ -154,8 +203,9 @@ def create_job(request: Request, file: UploadFile = File(...), options: str = Fo
     if src.stat().st_size > config.MAX_UPLOAD_MB * 1024 * 1024:
         shutil.rmtree(job_dir, ignore_errors=True)
         raise HTTPException(413, f"File is larger than {config.MAX_UPLOAD_MB} MB.")
-    job = Job(id=uuid.uuid4().hex[:12], dir=job_dir)
+    job = Job(id=job_dir.name, dir=job_dir)
     JOBS[job.id] = job
+    _save(job)
     threading.Thread(target=_run, args=(job, src, opts), daemon=True).start()
     return {"id": job.id}
 
