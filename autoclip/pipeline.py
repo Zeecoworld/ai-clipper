@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Callable
 
 from . import config
-from .captions import CaptionStyle, build_ass, extract_audio, slice_words, transcribe
+from .captions import CaptionStyle, build_ass, extract_audio, slice_words, transcribe, transcribe_long
 from .media import VideoInfo, probe
 from .render import make_vertical_clip
 from .scoring import blend_scores, sample_scores, select_clips, speech_scores
@@ -64,11 +64,9 @@ def process(src: Path, job_dir: Path, clip_count: int, clip_length: int, blur: i
     if weight > 0 and info.has_audio and config.CAPTIONS_ENABLED:
         progress(0.04, "Transcribing the whole video to find the best moments…")
         try:
-            wav = extract_audio(src, job_dir / "full.wav", 0.0, info.duration)
-            try:
-                all_words = transcribe(wav, language)
-            finally:
-                wav.unlink(missing_ok=True)
+            all_words = transcribe_long(
+                src, job_dir, info.duration, language, transcribe_fn=transcribe,
+                progress=lambda f: progress(0.04 + 0.05 * f, f"Transcribing the whole video… {int(f * 100)}%"))
             samples = blend_scores(samples, speech_scores(all_words, [t for t, _ in samples]), weight)
             info.timeline = samples
         except Exception:  # fall back to motion-only picking
