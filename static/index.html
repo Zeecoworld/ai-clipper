@@ -20,9 +20,10 @@
 body{font:14px/1.45 var(--font);color:var(--text);background:var(--bg);height:100vh;overflow:hidden}
 button,input,select{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--blue);outline-offset:2px}
-.app{display:grid;height:100vh;grid-template-columns:72px 320px minmax(0,1fr);grid-template-rows:56px minmax(0,1fr) 190px;
+.app{display:grid;height:100vh;grid-template-columns:72px 320px minmax(0,1fr);grid-template-rows:56px minmax(0,1fr) var(--tlh,clamp(128px,24vh,200px));
   grid-template-areas:"top top top" "rail set stage" "rail tl tl";background:var(--panel)}
 /* top bar */
+.app.tlc{--tlh:46px!important}.app.tlc #tl{display:none}
 .top{grid-area:top;display:flex;align-items:center;gap:12px;padding:0 16px;border-bottom:1px solid var(--line)}
 .brand{display:flex;align-items:center;gap:9px;font-weight:700;font-size:16px;width:240px}
 .logo{width:30px;height:30px;border-radius:9px;background:var(--text);color:var(--panel);display:grid;place-items:center;font-size:15px}
@@ -68,53 +69,60 @@ input[type=color]{width:100%;height:36px;border:1px solid var(--line);border-rad
 .bar i{display:block;height:100%;width:0;background:var(--blue);border-radius:99px;transition:width .4s}
 #prog .row{display:flex;justify-content:space-between;color:var(--muted);font-size:12px}
 #err{background:var(--panel)1f1;border-color:#f6c9cb;color:#9d2a2f;white-space:pre-wrap;word-break:break-word;font-size:13px}
-.canvas{flex:1;min-height:0;display:grid;place-items:center;padding:20px;overflow:auto}
+.canvas{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:14px 20px 18px;overflow:auto}
 #drop{width:min(640px,100%);text-align:center;padding:52px 28px;background:var(--panel);border:2px dashed var(--line);border-radius:18px;cursor:pointer;transition:border-color .15s,background .15s}
 #drop.over{border-color:var(--blue);background:var(--blue-s)}
 #drop .ic{width:56px;height:56px;border-radius:16px;background:var(--blue-s);color:var(--blue-d);display:grid;place-items:center;font-size:26px;margin:0 auto 16px}
 #drop h1{font-size:26px;line-height:1.15;font-weight:700;margin-bottom:8px}
 #drop p{color:var(--muted);max-width:44ch;margin:0 auto 18px}
-.view{display:none;width:100%;height:100%;min-height:0;place-items:center}
-.view.on{display:grid}
-#v-source video{max-width:100%;max-height:100%;border-radius:12px;background:#000;box-shadow:0 8px 30px #1a2a4a22}
-.phone{position:relative;width:min(250px,100%);aspect-ratio:9/16;max-height:100%;border-radius:22px;border:4px solid var(--text);overflow:hidden;
+.view{display:none;width:100%;height:100%;min-height:0}
+.view.on{display:flex;align-items:center;justify-content:center}
+#v-source video{width:100%;height:100%;object-fit:contain;border-radius:12px;background:#000;box-shadow:0 8px 30px #1a2a4a22}
+.phone{position:relative;height:100%;max-height:560px;aspect-ratio:9/16;border-radius:22px;border:4px solid var(--text);overflow:hidden;
   background:linear-gradient(160deg,#3b6fb6,#7a4fb5 55%,#f0708a);container-type:size;box-shadow:0 8px 30px #1a2a4a33}
 .phone::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 30% 70%,#ffffff2a,transparent 55%)}
 .phone .hook{position:absolute;top:9%;left:8%;right:8%;text-align:center;font:800 6.5cqw/1.2 var(--font);color:#000;background:#fff;border-radius:2px;padding:1cqw 2cqw;display:none}
 .phone .cap{position:absolute;left:6%;right:6%;text-align:center;font:800 7cqw/1.15 var(--font);color:#fff;-webkit-text-stroke:.4cqw #000;paint-order:stroke fill;text-shadow:0 .5cqw 0 #000}
-#v-clips{align-items:start;justify-items:stretch;overflow:auto;align-content:start}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px;width:100%}
-.clip{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:9px;transition:border-color .15s,box-shadow .15s}
-.clip:hover{border-color:var(--blue);box-shadow:0 6px 20px #1a2a4a14}
-.clip video{width:100%;aspect-ratio:9/16;object-fit:cover;border-radius:10px;background:#000;display:block}
-.clip .t{display:flex;justify-content:space-between;margin:9px 2px 5px;font-weight:600}
-.clip .t small{color:var(--muted);font-weight:500}
-.score{height:5px;border-radius:9px;background:var(--soft);overflow:hidden;margin:0 2px 7px}
+#v-clips{gap:16px;align-items:stretch!important;justify-content:stretch!important}
+.player{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px;min-height:0}
+.pv{flex:1;min-height:0;display:flex;justify-content:center;background:#05070b;border-radius:14px;padding:8px}
+.pv video{height:100%;aspect-ratio:9/16;max-width:100%;object-fit:contain;background:#000;border-radius:8px}
+.pbar{display:flex;align-items:center;gap:10px}.pbar span{color:var(--muted)}
+.list{width:236px;flex:none;overflow:auto;display:flex;flex-direction:column;gap:8px}
+.item{text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;cursor:pointer;display:block;width:100%}
+.item:hover{border-color:var(--blue)}
+.item[aria-current=true]{border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-s)}
+.item .t{display:flex;justify-content:space-between;font-weight:600;margin-bottom:7px}
+.item .t small{color:var(--muted);font-weight:500}
+.score{height:5px;border-radius:9px;background:var(--soft);overflow:hidden;margin-bottom:7px}
 .score i{display:block;height:100%;background:var(--purple)}
-.clip .note{font-size:12px;color:var(--muted);margin:0 2px 8px;min-height:17px}
-.clip a.btn{display:flex;justify-content:center;font-size:13px;width:100%}
-.pills{display:none;justify-content:center;padding:0 0 14px}
+.item .note{font-size:12px;color:var(--muted);min-height:16px}
+.pills{display:none;align-items:center;gap:12px;padding:12px 20px 0}
+.pills .info{margin-left:auto;min-width:0;color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pills .info a{color:var(--blue-d);font-weight:600;text-decoration:none}
 .pills>div{display:flex;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:4px;box-shadow:0 2px 10px #1a2a4a0f}
 .pills button{border:0;background:none;padding:7px 14px;border-radius:9px;font-weight:600;color:var(--muted);cursor:pointer}
 .pills button[aria-selected=true]{background:var(--text);color:var(--panel)}
 .pills button:disabled{opacity:.4;cursor:not-allowed}
 .meta{color:var(--muted);font-size:12px;text-align:center;margin-top:10px}
 /* timeline */
-.tl{grid-area:tl;border-top:1px solid var(--line);display:flex;flex-direction:column;min-width:0;background:var(--panel)}
-.tlh{display:flex;align-items:center;gap:12px;padding:8px 16px}
+.tl{position:relative;grid-area:tl;border-top:1px solid var(--line);display:flex;flex-direction:column;min-width:0;background:var(--panel)}
+.grip{position:absolute;top:-4px;left:0;right:0;height:9px;cursor:ns-resize;z-index:2}.grip:hover,.grip.drag{background:var(--blue-s)}
+.tlh{display:flex;align-items:center;gap:12px;padding:6px 16px}
 .tlh .hint{color:var(--muted);font-size:12px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tlh .time{flex:none;font-variant-numeric:tabular-nums;font-weight:600}
 .tlh .time span{color:var(--muted);font-weight:500}
-.play{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--panel);cursor:pointer;font-size:12px}
+.play{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:var(--panel);cursor:pointer;font-size:12px}
 .play:hover{background:var(--soft)}
 .tlh .r{flex:1;display:flex;justify-content:flex-end}
 #tl{flex:1;min-height:0;width:100%;display:block;cursor:pointer}
+@media(max-width:700px){.pills .info{display:none}.list{width:150px}}
 @media(max-width:1000px){
   body{height:auto;overflow:auto}
   .app{height:auto;grid-template-columns:1fr;grid-template-rows:auto;grid-template-areas:"top" "rail" "set" "stage" "tl"}
   .rail{flex-direction:row;justify-content:center;border-right:0;border-bottom:1px solid var(--line);padding:6px}
   .set{border-right:0;border-bottom:1px solid var(--line)}
-  .stage{min-height:70vh}.tl{height:190px}
+  .stage{min-height:78vh}.tl{height:190px}.grip{display:none}
   .brand{width:auto}#pname{display:none}
 }
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -180,6 +188,12 @@ input[type=color]{width:100%;height:36px;border:1px solid var(--line);border-rad
     </div>
     <div id="err" class="banner" role="alert"></div>
 
+    <div class="pills" id="pills"><div role="tablist">
+      <button role="tab" aria-selected="true" data-view="source">Source video</button>
+      <button role="tab" aria-selected="false" data-view="preview">Caption preview</button>
+      <button role="tab" aria-selected="false" data-view="clips" id="pclips" disabled>Clips</button>
+    </div><div class="info"><span id="sname"></span> &nbsp; <span id="smeta"></span> &nbsp; <a href="#" id="swap">Choose another</a></div></div>
+
     <div class="canvas">
       <div id="drop" tabindex="0" role="button" aria-label="Choose a video file">
         <div class="ic" aria-hidden="true">⬆</div>
@@ -190,32 +204,24 @@ input[type=color]{width:100%;height:36px;border:1px solid var(--line);border-rad
       </div>
       <input id="file" type="file" accept=".mp4,.mov,.mkv,.avi,.webm,video/*" hidden>
 
-      <div class="view" id="v-source">
-        <div><video id="srcvid" controls playsinline preload="metadata"></video>
-          <div class="meta"><span id="sname"></span> &nbsp; <span id="smeta"></span> &nbsp; <a href="#" id="swap">Choose another</a></div></div>
-      </div>
-      <div class="view" id="v-preview">
-        <div><div class="phone"><div class="hook" id="phook"></div><div class="cap" id="pcap"></div></div>
-          <div class="meta">Caption preview on a 9:16 clip. It updates as you change settings.</div></div>
-      </div>
+      <div class="view" id="v-source"><video id="srcvid" controls playsinline preload="metadata"></video></div>
+      <div class="view" id="v-preview"><div class="phone"><div class="hook" id="phook"></div><div class="cap" id="pcap"></div></div></div>
       <div class="view" id="v-clips">
-        <div style="width:100%"><div class="grid" id="grid"></div></div>
+        <div class="player"><div class="pv"><video id="cplayer" controls playsinline></video></div>
+          <div class="pbar"><b id="cname"></b><span id="ctime"></span><span class="sp"></span><a class="btn blue" id="cdl" href="#" download>Download clip</a></div></div>
+        <div class="list" id="grid"></div>
       </div>
     </div>
 
-    <div class="pills" id="pills"><div role="tablist">
-      <button role="tab" aria-selected="true" data-view="source">Source video</button>
-      <button role="tab" aria-selected="false" data-view="preview">Caption preview</button>
-      <button role="tab" aria-selected="false" data-view="clips" id="pclips" disabled>Clips</button>
-    </div></div>
   </main>
 
   <section class="tl">
+    <div class="grip" id="grip" title="Drag to resize the timeline"></div>
     <div class="tlh">
       <span class="hint" id="tlhint">Activity timeline: choose a video to begin.</span>
       <button class="play" id="play" type="button" aria-label="Play or pause the source video">▶</button>
       <span class="time"><b id="tcur">0:00</b> <span>/ <span id="tdur">0:00</span></span></span>
-      <span class="r"></span>
+      <span class="r"><button class="btn icon" id="tlc" type="button" aria-label="Collapse timeline" title="Collapse or expand the timeline" style="padding:5px 10px;font-size:13px">⌄</button></span>
     </div>
     <canvas id="tl"></canvas>
   </section>
@@ -224,7 +230,7 @@ input[type=color]{width:100%;height:36px;border:1px solid var(--line);border-rad
 <script>
 const $ = id => document.getElementById(id);
 const FIELDS = ['highlight_mode','clip_count','clip_length','blur','captions','language','words_per_line','font_size','uppercase','highlight','text_color','highlight_color','hook','hook_seconds'];
-let file = null, srcURL = null, duration = 0, job = null, timeline = [], clips = [], hover = -1, cfg = {max_upload_mb: 500, captions: true};
+let file = null, srcURL = null, duration = 0, job = null, timeline = [], clips = [], hover = -1, sel = -1, cfg = {max_upload_mb: 500, captions: true};
 
 const fmt = s => `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
 const hms = s => s >= 3600 ? `${Math.floor(s/3600)}:${fmt(s%3600).padStart(5,'0')}` : fmt(s);
@@ -247,6 +253,8 @@ document.querySelectorAll('.rail button').forEach(b=>b.addEventListener('click',
 }));
 function setView(v){
   if(!file)return;
+  if(v!=='clips')$('cplayer').pause();
+  if(v==='clips')$('srcvid').pause();
   document.querySelectorAll('.view').forEach(e=>e.classList.toggle('on',e.id==='v-'+v));
   document.querySelectorAll('.pills button').forEach(b=>b.setAttribute('aria-selected',b.dataset.view===v));
 }
@@ -298,7 +306,7 @@ function setFile(f){
   $('go').disabled=false; drawTimeline();
 }
 function resetRun(){
-  job=null;timeline=[];clips=[];hover=-1;
+  job=null;timeline=[];clips=[];hover=-1;sel=-1;$('cplayer').pause();
   ['prog','err'].forEach(i=>$(i).style.display='none'); $('grid').innerHTML='';
   $('zip').style.display='none'; $('pclips').disabled=true;
 }
@@ -309,31 +317,29 @@ function drawTimeline(){
   const c=$('tl'); if(!c.clientWidth||!c.clientHeight)return;
   const dpr=window.devicePixelRatio||1, w=c.clientWidth, h=c.clientHeight;
   c.width=w*dpr;c.height=h*dpr; const g=c.getContext('2d'); g.scale(dpr,dpr); g.clearRect(0,0,w,h);
-  const dur=duration||timeline.at(-1)?.[0]||1, X=t=>t/dur*w, padX=16, W=w-padX*2, XX=t=>padX+t/dur*W;
+  const dur=duration||timeline.at(-1)?.[0]||1, padX=16, W=w-padX*2, XX=t=>padX+t/dur*W;
   const v=$('srcvid'), cur=v.currentTime||0, cs=getComputedStyle(document.documentElement), C=n=>cs.getPropertyValue(n).trim();
-  // ruler
   g.font='500 11px Figtree,sans-serif';g.fillStyle=C('--muted');g.strokeStyle=C('--line');
   const n=Math.max(2,Math.min(12,Math.floor(W/90)));
-  for(let i=0;i<=n;i++){const t=dur*i/n,x=XX(t);g.textAlign=i===0?'left':i===n?'right':'center';g.fillText(hms(t),x,13);g.beginPath();g.moveTo(x,18);g.lineTo(x,24);g.stroke()}
+  for(let i=0;i<=n;i++){const t=dur*i/n,x=XX(t);g.textAlign=i===0?'left':i===n?'right':'center';g.fillText(hms(t),x,12);g.beginPath();g.moveTo(x,16);g.lineTo(x,21);g.stroke()}
   g.textAlign='left';
-  // clip chips (like the Text / Image chips in an editor)
-  clips.forEach((r,i)=>{const x=XX(r.start),cw=Math.max(14,r.length/dur*W);
-    g.fillStyle=i===hover?'#7a4df0':'#5b2be0';g.beginPath();g.roundRect(x,30,cw,22,6);g.fill();
-    g.fillStyle='#fff';g.font='600 11px Figtree,sans-serif';g.save();g.beginPath();g.rect(x,30,cw,22);g.clip();g.fillText('Clip '+r.index,x+8,45);g.restore();
-    g.fillStyle=i===hover?'rgba(91,43,224,.14)':'rgba(91,43,224,.07)';g.fillRect(x,56,cw,h-60)});
-  // activity waveform
-  const top=58, bh=h-top-8;
+  const compact=h<120, cy=compact?24:30, ch=compact?18:22, top=cy+ch+6, bh=Math.max(10,h-top-6);
+  clips.forEach((r,i)=>{const on=i===hover||i===sel,x=XX(r.start),cw=Math.max(14,r.length/dur*W);
+    g.fillStyle=on?'#7a4df0':'#5b2be0';g.beginPath();g.roundRect(x,cy,cw,ch,6);g.fill();
+    g.fillStyle='#fff';g.font='600 11px Figtree,sans-serif';g.save();g.beginPath();g.rect(x,cy,cw,ch);g.clip();g.fillText('Clip '+r.index,x+8,cy+ch-6);g.restore();
+    g.fillStyle=on?'rgba(91,43,224,.16)':'rgba(91,43,224,.07)';g.fillRect(x,top-2,cw,h-top+2)});
   if(timeline.length){
     const bw=Math.max(1.5,W/timeline.length-1);
     timeline.forEach(([t,s])=>{const hh=Math.max(2,s*bh);g.fillStyle=t<=cur?'#1ea1f2':C('--wave');g.beginPath();g.roundRect(XX(t),top+bh-hh,bw,hh,1);g.fill()});
-  }else{g.fillStyle=C('--soft');g.beginPath();g.roundRect(padX,top+bh-26,W,26,8);g.fill()}
-  // playhead
-  const px=XX(cur);g.fillStyle='#1ea1f2';g.fillRect(px-1,20,2,h-20);g.beginPath();g.moveTo(px-6,16);g.lineTo(px+6,16);g.lineTo(px,26);g.fill();
+  }else{const ph=Math.min(26,bh);g.fillStyle=C('--soft');g.beginPath();g.roundRect(padX,top+bh-ph,W,ph,8);g.fill()}
+  const px=XX(cur);g.fillStyle='#1ea1f2';g.fillRect(px-1,18,2,h-18);g.beginPath();g.moveTo(px-6,14);g.lineTo(px+6,14);g.lineTo(px,24);g.fill();
   $('tcur').textContent=hms(cur);
 }
 $('tl').addEventListener('click',e=>{if(!file)return;const r=e.currentTarget.getBoundingClientRect();
   const t=Math.min(1,Math.max(0,(e.clientX-r.left-16)/(r.width-32)))*(duration||1);
-  const v=$('srcvid');v.currentTime=t;if(clips.length)setView('source');drawTimeline()});
+  $('srcvid').currentTime=t;
+  const i=clips.findIndex(c=>t>=c.start&&t<=c.start+c.length);
+  if(i>=0)selectClip(i); else {setView('source');drawTimeline()}});
 $('tl').addEventListener('mousemove',e=>{if(!clips.length)return;const r=e.currentTarget.getBoundingClientRect();
   const t=(e.clientX-r.left-16)/(r.width-32)*duration;const i=clips.findIndex(c=>t>=c.start&&t<=c.start+c.length);if(i!==hover){hover=i;drawTimeline()}});
 $('srcvid').addEventListener('timeupdate',drawTimeline);
@@ -341,6 +347,12 @@ $('srcvid').addEventListener('play',()=>$('play').textContent='❚❚');
 $('srcvid').addEventListener('pause',()=>$('play').textContent='▶');
 $('play').addEventListener('click',()=>{if(!file)return;setView('source');const v=$('srcvid');v.paused?v.play():v.pause()});
 addEventListener('resize',drawTimeline);
+$('tlc').addEventListener('click',()=>{const a=document.querySelector('.app'),c=a.classList.toggle('tlc');
+  $('tlc').textContent=c?'⌃':'⌄';$('tlc').setAttribute('aria-label',c?'Expand timeline':'Collapse timeline');requestAnimationFrame(drawTimeline)});
+$('grip').addEventListener('pointerdown',e=>{const g=$('grip'),a=document.querySelector('.app');g.setPointerCapture(e.pointerId);g.classList.add('drag');a.classList.remove('tlc');$('tlc').textContent='⌄';
+  const mv=ev=>{a.style.setProperty('--tlh',Math.min(innerHeight*.55,Math.max(96,innerHeight-ev.clientY))+'px');drawTimeline()};
+  const up=()=>{g.classList.remove('drag');g.removeEventListener('pointermove',mv);g.removeEventListener('pointerup',up)};
+  g.addEventListener('pointermove',mv);g.addEventListener('pointerup',up)});
 
 /* ---------- run job ---------- */
 function setProg(p,msg,sub){$('pbar').style.width=(p*100).toFixed(1)+'%';$('ppct').textContent=Math.round(p*100)+'%';$('pmsg').textContent=msg;$('psub').textContent=sub||''}
@@ -367,26 +379,33 @@ async function poll(){
   }catch(e){}
   setTimeout(poll,1000);
 }
+function selectClip(i){
+  sel=i; const c=clips[i], p=$('cplayer');
+  $('srcvid').pause(); p.src=c.url; p.play().catch(()=>{});
+  $('cname').textContent='Clip '+c.index; $('ctime').textContent=`${fmt(c.start)} to ${fmt(c.start+c.length)}`;
+  $('cdl').href=c.url+'?download=1';
+  document.querySelectorAll('.item').forEach((el,k)=>el.setAttribute('aria-current',k===i));
+  setView('clips'); drawTimeline();
+}
 function finish(d){
   $('prog').style.display='none'; $('go').disabled=false;
   timeline=d.timeline; clips=d.results; duration=duration||d.duration; drawTimeline();
   if(!clips.length)return showErr('No suitable moments were detected in this video.');
-  $('tlhint').textContent=`${clips.length} clip${clips.length>1?'s':''} picked. Taller peaks mean more motion or speech activity. Click the timeline to jump in the source.`;
+  $('tlhint').textContent=`${clips.length} clip${clips.length>1?'s':''} picked. Click a purple clip on the timeline to watch it, or click empty space to jump in the source.`;
   $('zip').href=`/api/jobs/${job}/zip`; $('zip').style.display=clips.length>1?'inline-flex':'none';
   const top=Math.max(...clips.map(c=>c.score))||1;
   $('grid').innerHTML=clips.map((c,i)=>`
-    <article class="clip" data-i="${i}">
-      <video src="${c.url}" controls playsinline preload="metadata"></video>
+    <button class="item" type="button" data-i="${i}" aria-current="false">
       <div class="t">Clip ${c.index}<small>${fmt(c.start)} to ${fmt(c.start+c.length)}</small></div>
       <div class="score" title="Activity score ${c.score}"><i style="width:${Math.round(c.score/top*100)}%"></i></div>
       <div class="note">${c.caption_note?esc(c.caption_note):c.caption_words?c.caption_words+' words captioned':''}</div>
-      <a class="btn" href="${c.url}?download=1" download>Download clip ${c.index}</a>
-    </article>`).join('');
-  document.querySelectorAll('.clip').forEach(el=>{
+    </button>`).join('');
+  document.querySelectorAll('.item').forEach(el=>{
+    el.addEventListener('click',()=>selectClip(+el.dataset.i));
     el.addEventListener('mouseenter',()=>{hover=+el.dataset.i;drawTimeline()});
     el.addEventListener('mouseleave',()=>{hover=-1;drawTimeline()});
   });
-  $('pclips').disabled=false; setView('clips');
+  $('pclips').disabled=false; selectClip(0);
 }
 
 /* ---------- wiring ---------- */
